@@ -27,22 +27,23 @@ if __name__ == '__main__':
     config = ConfigParser.ConfigParser()
     config.read(CONFIG_LOCATION)
     
-    ec2 = connect_to_region(
-        aws_access_key_id=config.get('aws', 'access_key'),
-        aws_secret_access_key=config.get('aws', 'secret_key'),
-        region_name=config.get('aws', 'region')
-    )
-    
-    outstanding_csrs = list_csrs()
-    if outstanding_csrs:
-        reservations = ec2.get_all_instances()
-        _instances = [i for r in reservations for i in r.instances]
-        instances = {}
-        for i in _instances:
-            instances[i.id] = i
+    for region in config.get('aws', 'regions').split(','):
+        ec2 = connect_to_region(
+            aws_access_key_id=config.get('aws', 'access_key'),
+            aws_secret_access_key=config.get('aws', 'secret_key'),
+            region_name=region
+        )
         
-        for csr in outstanding_csrs:
-            if verify(csr_name=csr, ec2=ec2, instances=instances):
-                sign(csr)
+        outstanding_csrs = list_csrs()
+        if outstanding_csrs:
+            reservations = ec2.get_all_instances()
+            _instances = [i for r in reservations for i in r.instances]
+            instances = {}
+            for i in _instances:
+                instances[i.id] = i
+            
+            for csr in outstanding_csrs:
+                if verify(csr_name=csr, ec2=ec2, instances=instances):
+                    sign(csr)
     
     sys.exit(0)
